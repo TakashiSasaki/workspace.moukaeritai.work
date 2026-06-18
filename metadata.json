@@ -1,0 +1,6 @@
+{
+  "name": "Project Development Dashboard",
+  "description": "A compact full-stack single-page developer dashboard to monitor multiple repositories, pull requests, workflows, Jules sessions, and ChatGPT links.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

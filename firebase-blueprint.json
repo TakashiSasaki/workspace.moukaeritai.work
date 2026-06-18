@@ -1,0 +1,160 @@
+{
+  "entities": {
+    "UserSecret": {
+      "title": "UserSecret",
+      "description": "User specific secure settings for GitHub Token and Jules API Key.",
+      "type": "object",
+      "properties": {
+        "githubToken": { "type": "string" },
+        "julesApiKey": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["createdAt", "updatedAt"]
+    },
+    "Dashboard": {
+      "title": "Dashboard",
+      "description": "Custom Workspace Dashboard instance.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "slug": { "type": "string" },
+        "description": { "type": "string" },
+        "color": { "type": "string" },
+        "icon": { "type": "string" },
+        "sortOrder": { "type": "number" },
+        "pinned": { "type": "boolean" },
+        "archived": { "type": "boolean" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["name", "slug", "sortOrder", "pinned", "archived", "createdAt", "updatedAt"]
+    },
+    "RepoBinding": {
+      "title": "RepoBinding",
+      "description": "GitHub repository binding details for a dashboard.",
+      "type": "object",
+      "properties": {
+        "dashboardId": { "type": "string" },
+        "provider": { "type": "string", "enum": ["github"] },
+        "owner": { "type": "string" },
+        "repo": { "type": "string" },
+        "defaultBranch": { "type": "string" },
+        "workingBranch": { "type": "string" },
+        "role": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["dashboardId", "provider", "owner", "repo", "defaultBranch", "role", "createdAt", "updatedAt"]
+    },
+    "JulesBinding": {
+      "title": "JulesBinding",
+      "description": "Jules agent linkage configuration details.",
+      "type": "object",
+      "properties": {
+        "dashboardId": { "type": "string" },
+        "sourceName": { "type": "string" },
+        "defaultStartingBranch": { "type": "string" },
+        "requirePlanApproval": { "type": "boolean" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["dashboardId", "requirePlanApproval", "createdAt", "updatedAt"]
+    },
+    "ChatGptLink": {
+      "title": "ChatGptLink",
+      "description": "Shared ChatGPT conversation context links.",
+      "type": "object",
+      "properties": {
+        "dashboardId": { "type": "string" },
+        "title": { "type": "string" },
+        "url": { "type": "string" },
+        "urlType": { "type": "string", "enum": ["private_conversation", "shared_link"] },
+        "kind": { "type": "string" },
+        "description": { "type": "string" },
+        "pinned": { "type": "boolean" },
+        "lastOpenedAt": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["dashboardId", "title", "url", "urlType", "kind", "pinned", "createdAt", "updatedAt"]
+    },
+    "TimelineEvent": {
+      "title": "TimelineEvent",
+      "description": "Unified stream activity event tracking item.",
+      "type": "object",
+      "properties": {
+        "dashboardId": { "type": "string" },
+        "source": { "type": "string" },
+        "kind": { "type": "string" },
+        "severity": { "type": "string" },
+        "requiresUserAction": { "type": "boolean" },
+        "title": { "type": "string" },
+        "body": { "type": "string" },
+        "externalUrl": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["dashboardId", "source", "kind", "severity", "requiresUserAction", "title", "createdAt"]
+    },
+    "JulesSession": {
+      "title": "JulesSession",
+      "description": "Jules interaction session item.",
+      "type": "object",
+      "properties": {
+        "dashboardId": { "type": "string" },
+        "name": { "type": "string" },
+        "status": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["dashboardId", "name", "status", "createdAt", "updatedAt"]
+    },
+    "JulesActivity": {
+      "title": "JulesActivity",
+      "description": "Single utterance or log inside a Jules session.",
+      "type": "object",
+      "properties": {
+        "sessionId": { "type": "string" },
+        "type": { "type": "string" },
+        "text": { "type": "string" },
+        "planDetails": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["sessionId", "type", "text", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserSecret" },
+      "description": "The top-level private profile data of each user."
+    },
+    "/users/{userId}/dashboards/{dashboardId}": {
+      "schema": { "$ref": "#/entities/Dashboard" },
+      "description": "Workspace dashboards belonging to the registered user."
+    },
+    "/users/{userId}/repoBindings/{bindingId}": {
+      "schema": { "$ref": "#/entities/RepoBinding" },
+      "description": "Repository links corresponding to user workspace dashboards."
+    },
+    "/users/{userId}/julesBindings/{bindingId}": {
+      "schema": { "$ref": "#/entities/JulesBinding" },
+      "description": "Jules Agent configuration for user workspace dashboards."
+    },
+    "/users/{userId}/chatGptLinks/{linkId}": {
+      "schema": { "$ref": "#/entities/ChatGptLink" },
+      "description": "Stored ChatGPT URLs indexed per workspace."
+    },
+    "/users/{userId}/timelineEvents/{eventId}": {
+      "schema": { "$ref": "#/entities/TimelineEvent" },
+      "description": "Cached development activities and status milestones."
+    },
+    "/users/{userId}/julesSessions/{sessionId}": {
+      "schema": { "$ref": "#/entities/JulesSession" },
+      "description": "Interactive workspace agent sessions."
+    },
+    "/users/{userId}/julesActivities/{activityId}": {
+      "schema": { "$ref": "#/entities/JulesActivity" },
+      "description": "Chat log transcripts of interactive operations."
+    }
+  }
+}

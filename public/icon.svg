@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <linearGradient id="roseGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fda4af" />
+      <stop offset="50%" stop-color="#f43f5e" />
+      <stop offset="100%" stop-color="#be123c" />
+    </linearGradient>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#18181b" />
+      <stop offset="100%" stop-color="#09090b" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Outer Card body -->
+  <rect width="512" height="512" rx="112" fill="url(#bgGrad)" stroke="#27272a" stroke-width="8"/>
+  
+  <!-- Sleek tech background grids -->
+  <path d="M 96,0 L 96,512 M 208,0 L 208,512 M 320,0 L 320,512 M 416,0 L 416,512" stroke="#27272a" stroke-width="2" opacity="0.3"/>
+  <path d="M 0,96 L 512,96 M 0,208 L 512,208 M 0,320 L 512,320 M 0,416 L 512,416" stroke="#27272a" stroke-width="2" opacity="0.3"/>
+  
+  <!-- Abstract Code Brackets and Metric line (Dashboard Theme) -->
+  <g transform="translate(40, 40)">
+    <!-- Left bracket < -->
+    <path d="M 120,110 L 40,216 L 120,322" fill="none" stroke="url(#roseGlow)" stroke-width="32" stroke-linecap="round" stroke-linejoin="round" />
+    
+    <!-- Right bracket > -->
+    <path d="M 312,110 L 392,216 L 312,322" fill="none" stroke="url(#roseGlow)" stroke-width="32" stroke-linecap="round" stroke-linejoin="round" />
+    
+    <!-- Code stroke / Inner pulse line -->
+    <path d="M 170,300 L 210,132 L 262,260 L 302,132" fill="none" stroke="#fafafa" stroke-width="24" stroke-linecap="round" stroke-linejoin="round" opacity="0.9" />
+  </g>
+  
+  <!-- Glossy effect -->
+  <path d="M 12,112 C 12,56 56,12 112,12 L 400,12 C 456,12 500,56 500,112 C 300,150 150,150 12,112 Z" fill="#ffffff" opacity="0.04" />
+</svg>

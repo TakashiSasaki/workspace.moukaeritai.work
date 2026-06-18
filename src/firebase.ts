@@ -55,13 +55,29 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
   throw new Error(JSON.stringify(errInfo));
 }
 
-// Google Login Trigger using signInWithPopup
-export async function loginWithGoogle() {
+export const firebaseConfigData = firebaseConfig;
+
+// Google Login Trigger using signInWithPopup supporting progress callback
+export async function loginWithGoogle(onProgress?: (msg: string) => void) {
   try {
+    if (onProgress) onProgress("1. Initiating Google Sign-In with popup...");
     const result = await signInWithPopup(auth, googleProvider);
+    if (onProgress) onProgress("2. Google Sign-In with popup completed successfully.");
     return result.user;
-  } catch (error) {
+  } catch (error: any) {
     console.error("Google Sign-In Error:", error);
+    if (onProgress) {
+      onProgress(`ERROR: Google Sign-In failed.`);
+      if (error && typeof error === 'object') {
+        onProgress(`Error Code: ${error.code || "unknown"}`);
+        onProgress(`Error Message: ${error.message || String(error)}`);
+        if (error.customData) {
+          onProgress(`Error CustomData: ${JSON.stringify(error.customData)}`);
+        }
+      } else {
+        onProgress(`Error: ${String(error)}`);
+      }
+    }
     throw error;
   }
 }

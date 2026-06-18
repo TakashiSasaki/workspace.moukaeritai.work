@@ -42,7 +42,7 @@ import {
   Play
 } from "lucide-react";
 import { Dashboard, DashboardRepoBinding, DashboardJulesBinding, DashboardChatGptLink, TimelineEvent } from "./types";
-import { auth, db, loginWithGoogle, logoutUser, handleFirestoreError, OperationType } from "./firebase";
+import { auth, db, loginWithGoogle, logoutUser, handleFirestoreError, OperationType, firebaseConfigData } from "./firebase";
 import { onAuthStateChanged, User as FirebaseUser } from "firebase/auth";
 import {
   collection,
@@ -748,6 +748,9 @@ export default function App() {
   const [showArchivedJulesSessions, setShowArchivedJulesSessions] = useState(false);
   const [isWorkspaceDropdownOpen, setIsWorkspaceDropdownOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authLogs, setAuthLogs] = useState<string[]>([]);
+  const [authStep, setAuthStep] = useState<string | null>(null);
+  const [authErrorDetails, setAuthErrorDetails] = useState<any | null>(null);
   const [isGithubBillingModalOpen, setIsGithubBillingModalOpen] = useState(false);
   const [allRepoBindings, setAllRepoBindings] = useState<any[]>([]);
   const [allJulesSessions, setAllJulesSessions] = useState<any[]>([]);
@@ -5525,22 +5528,156 @@ Once the plan is created and approved, proceed with execution autonomously. Do n
                     </div>
                   </div>
                 ) : (
-                  <button
-                    onClick={async () => {
-                      try {
-                        await loginWithGoogle();
-                        setIsAuthModalOpen(false);
-                        alert("Successfully authenticated Google Account with safe Firestore persistent context!");
-                      } catch (e: any) {
-                        console.error(e);
-                        alert(`Access denied or cancelled: ${e.message}`);
-                      }
-                    }}
-                    className="w-full py-3 bg-white hover:bg-zinc-200 text-zinc-950 font-black text-xs uppercase tracking-widest rounded-xl shadow-lg transition active:scale-95 flex items-center justify-center gap-2 cursor-pointer font-mono"
-                  >
-                    <User className="w-4 h-4 text-rose-600" />
-                    Authenticate Google Account
-                  </button>
+                  <div className="flex flex-col gap-3">
+                    <button
+                      onClick={async () => {
+                        setAuthLogs([]);
+                        setAuthErrorDetails(null);
+                        setAuthStep("initializing");
+                        
+                        const addLog = (msg: string) => {
+                          const timestamp = new Date().toLocaleTimeString();
+                          setAuthLogs(prev => [...prev, `[${timestamp}] ${msg}`]);
+                        };
+
+                        try {
+                          addLog("Starting OAuth Handshake Sequence...");
+                          addLog(`Current Domain/Hostname: ${window.location.hostname}`);
+                          addLog(`Current URL: ${window.location.href}`);
+                          addLog(`User Agent: ${navigator.userAgent.substring(0, 80)}...`);
+                          addLog(`Firebase Auth Project ID: ${firebaseConfigData.projectId || "not loaded"}`);
+                          addLog(`Firebase Auth Domain: ${firebaseConfigData.authDomain || "not loaded"}`);
+                          
+                          await loginWithGoogle((msg) => {
+                            addLog(msg);
+                          });
+                          
+                          setAuthStep("success");
+                          addLog("Authentication fully resolved.");
+                          setIsAuthModalOpen(false);
+                          alert("Successfully authenticated Google Account with safe Firestore persistent context!");
+                        } catch (e: any) {
+                          setAuthStep("failed");
+                          console.error("Auth Handshake caught error:", e);
+                          setAuthErrorDetails(e);
+                          addLog(`CRITICAL: Auth handshake failed.`);
+                          if (e && typeof e === 'object') {
+                            addLog(`Error Code: ${e.code || "unknown"}`);
+                            addLog(`Error Message: ${e.message || String(e)}`);
+                          } else {
+                            addLog(`Error: ${String(e)}`);
+                          }
+                        }
+                      }}
+                      disabled={authStep === "initializing"}
+                      className={`w-full py-3 font-black text-xs uppercase tracking-widest rounded-xl shadow-lg transition active:scale-95 flex items-center justify-center gap-2 cursor-pointer font-mono ${
+                        authStep === "initializing" 
+                          ? "bg-zinc-800 text-zinc-500 cursor-not-allowed animate-pulse animate-blink" 
+                          : "bg-white hover:bg-zinc-200 text-zinc-950"
+                      }`}
+                    >
+                      <User className="w-4 h-4 text-rose-600" />
+                      {authStep === "initializing" ? "Authenticating..." : "Authenticate Google Account"}
+                    </button>
+
+                    {/* 🖥️ LIVE RETRO AUTH LOGGING CONSOLE */}
+                    {authLogs.length > 0 && (
+                      <div className="mt-4 border border-zinc-800 bg-zinc-950/70 p-4 rounded-xl flex flex-col gap-2.5">
+                        <div className="flex items-center justify-between border-b border-zinc-900 pb-2">
+                          <span className="text-[10px] font-bold text-zinc-400 font-mono tracking-wider flex items-center gap-1.5 uppercase">
+                            <Terminal className="w-3.5 h-3.5 text-zinc-500" />
+                            OAuth Diagnostics Live Log
+                          </span>
+                          <button
+                            onClick={() => {
+                              try {
+                                const logText = authLogs.join("\n") + (authErrorDetails ? `\n\nFull Error Details:\n${JSON.stringify(authErrorDetails, null, 2)}` : "");
+                                navigator.clipboard.writeText(logText);
+                                alert("Diagnostic logs copied to clipboard!");
+                              } catch (err) {
+                                console.error("Clipboard copy failed:", err);
+                              }
+                            }}
+                            className="text-[9px] font-mono text-zinc-500 hover:text-white border border-zinc-800 rounded bg-zinc-900 px-1.5 py-0.5 hover:bg-zinc-800 transition active:scale-95 cursor-pointer flex items-center gap-1 font-bold"
+                          >
+                            <Copy className="w-3 h-3" />
+                            Copy Logs
+                          </button>
+                        </div>
+                        
+                        <div className="bg-black/90 p-3 rounded-lg border border-zinc-900 font-mono text-[11px] leading-relaxed max-h-48 overflow-y-auto space-y-1 my-1">
+                          {authLogs.map((log, index) => {
+                            let textClass = "text-zinc-400";
+                            if (log.includes("ERROR:") || log.includes("CRITICAL:")) {
+                              textClass = "text-rose-450 font-semibold";
+                            } else if (log.includes("Error Code:")) {
+                              textClass = "text-amber-400 font-mono";
+                            } else if (log.includes("completed successfully") || log.includes("fully resolved")) {
+                              textClass = "text-emerald-450 font-bold";
+                            } else if (log.includes("1.") || log.includes("2.")) {
+                              textClass = "text-zinc-300 font-bold";
+                            }
+                            return (
+                              <div key={index} className={textClass}>
+                                {log}
+                              </div>
+                            );
+                          })}
+                        </div>
+
+                        {/* 💡 TROUBLESHOOTING PANEL FOR UNAUTHORIZED DOMAIN */}
+                        {(authErrorDetails?.code === 'auth/unauthorized-domain' || authLogs.some(l => l.includes('unauthorized-domain'))) ? (
+                          <div className="bg-rose-950/20 border border-rose-900/30 rounded-xl p-4 mt-1 text-xs">
+                            <div className="flex items-center gap-2 text-rose-400 font-bold mb-2 font-mono">
+                              <AlertTriangle className="w-4 h-4 shrink-0 text-amber-500" />
+                              <span>【原因特定】ドメイン未認証エラー (auth/unauthorized-domain)</span>
+                            </div>
+                            <p className="text-zinc-300 leading-relaxed mb-3">
+                              Firebase Authentication に現在のドメイン <code className="bg-zinc-900 px-1.5 py-0.5 rounded text-white font-mono font-bold font-semibold">{window.location.hostname}</code> が「承認済みドメイン (Authorized Domain)」として登録されていないことが原因です。
+                            </p>
+                            <div className="space-y-2 text-zinc-400 border-t border-zinc-850 pt-3">
+                              <p className="font-bold text-zinc-350 font-mono text-[11px]">🔧 Firebase側の解決手順:</p>
+                              <ol className="list-decimal pl-4 space-y-1.5 text-[11px] leading-relaxed">
+                                <li>
+                                  <a href="https://console.firebase.google.com/" target="_blank" rel="noreferrer" className="text-rose-450 hover:underline inline-flex items-center gap-0.5 font-bold">
+                                    Firebase Console に移動 <ExternalLink className="w-3.5 h-3.5" />
+                                  </a>
+                                </li>
+                                <li>
+                                  プロジェクト <strong className="text-zinc-200">moukaeritaid</strong> を選択して開きます。
+                                </li>
+                                <li>
+                                  左メニューから <strong className="text-zinc-200">Authentication</strong> を開きます。
+                                </li>
+                                <li>
+                                  上部のタブから <strong className="text-zinc-200">Settings (設定)</strong> をクリックします。
+                                </li>
+                                <li>
+                                  左の項目リストから <strong className="text-zinc-200">Authorized domains (承認済みドメイン)</strong> をクリックします。
+                                </li>
+                                <li>
+                                  <strong className="text-zinc-200">Add domain (ドメインの追加)</strong> ボタンをクリックし、以下を入力します：
+                                  <div className="bg-zinc-950 text-emerald-400 border border-zinc-800 p-2.5 rounded-lg font-mono text-[11.5px] My-1 font-black select-all flex items-center justify-between">
+                                    <span>{window.location.hostname}</span>
+                                    <span className="text-[8px] text-zinc-500 uppercase font-black tracking-wider">📋 コピペして追加</span>
+                                  </div>
+                                </li>
+                                <li>
+                                  追加をクリックした後、ブラウザでこのページを再読み込みし、もう一度ログインをお試しください！
+                                </li>
+                              </ol>
+                            </div>
+                          </div>
+                        ) : authErrorDetails && (
+                          <div className="bg-zinc-900 border border-zinc-805 rounded-xl p-3 text-xs text-rose-300">
+                            <span className="font-bold block mb-1">エラー詳細：</span>
+                            <pre className="font-mono text-[10px] bg-black p-2 rounded break-all whitespace-pre-wrap">{authErrorDetails.message || String(authErrorDetails)}</pre>
+                            <p className="text-[10px] text-zinc-500 mt-2">※ エラー原因が不明な場合は、上記の「Copy Logs」ボタンでログをコピーし、開発者またはAIにお知らせください。</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
 
